@@ -11,6 +11,10 @@ These VMs are intended for developing Puppet manifests for 389
 management and for pre-flighting 389 configuration changes before
 deploying on the production servers.
 
+## Acquire project
+
+    git@github.com:mheiges/vagrant-389_ebrc.git
+
 ## Setup the `scratch` directory
 
 The `scratch` directory is empty when initially cloned from the git
@@ -47,7 +51,9 @@ branch). This gives you the proper Vagrantfile.
 On each dsa and dsb run puppet to install 389 DS according to EBRC's
 specifications.
 
-    sudo /opt/puppetlabs/bin/puppet apply  --environment=savm /etc/puppetlabs/code/environments/savm/development/fedora_ds.pp 
+    sudo /opt/puppetlabs/bin/puppet apply \
+      --environment=savm \
+      /etc/puppetlabs/code/environments/savm/development/fedora_ds.pp 
 
 You will probably need to `vagrant reload dsa` and `vagrant reload dsb`
 after puppet provisioning to reset the Landrush plugin configuration so

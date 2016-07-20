@@ -1,0 +1,5 @@
+dn: cn=gus4commS,cn=OracleContext,ou=applications,dc=apidb,dc=org
+changetype: modify
+replace: orclNetDescString
+orclNetDescString: foofoofoo
+

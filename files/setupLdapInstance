@@ -1,0 +1,101 @@
+#!/bin/bash
+
+set -e
+
+DIR_MAN_PW=gas1gacdo
+GIT_REPO=git@git.apidb.org:apicommonsystem.git
+WORK_DIR=~root/fedora-ds
+
+if [ $UID -ne 0 ]; then
+  echo must run as sudo
+  exit 1
+fi
+
+# based on https://wiki.apidb.org/index.php/389DirectoryServerInstallation
+export DSHOST=$(hostname -s)
+
+mkdir -p "$WORK_DIR"
+cd "$WORK_DIR"
+
+git archive --remote "$GIT_REPO" HEAD \
+  | tar -x -C "$WORK_DIR" Directory
+
+
+sed "s/<DIR_MAN_PW>/$DIR_MAN_PW/ ; s/<DSHOST>/$DSHOST/" /vagrant/files/install.inf.tmpl > ~root/fedora-ds/install-$DSHOST.inf
+
+cp /vagrant/files/dsvm-rsa.p12 ~root/fedora-ds/$DSHOST.apidb.org-rsa.p12 
+
+if [ -f /vagrant/scratch/sampledata.ldif ]; then
+  cp /vagrant/scratch/sampledata.ldif ~root/fedora-ds/sampledata.ldif
+else
+  echo "Place data for import at /vagrant/scratch/sampledata.ldif."
+  echo "For example, use a backup from /var/lib/dirsrv/slapd-ds4/ldif/daily.ldif-userRoot"
+  echo "on a production server."
+  exit 1
+fi
+
+if ! lsof -i:389 >/dev/null; then
+  setup-ds-admin.pl -s -f ~root/fedora-ds/install-$DSHOST.inf
+else
+  echo setup-ds-admin.pl already run. Can not continue.
+  echo "Run 'sudo remove-ds.pl -i slapd-$DSHOST -a' to start over"
+  exit 1
+fi
+
+echo "make password file"
+ps | md5sum | cut -d' ' -f1 > /etc/dirsrv/slapd-$DSHOST/pwdfile.txt; \
+  chown ldap.ldap /etc/dirsrv/slapd-$DSHOST/pwdfile.txt;   \
+  chmod 400 /etc/dirsrv/slapd-$DSHOST/pwdfile.txt
+
+echo "add password token"
+echo 'Internal (Software) Token:'`cat /etc/dirsrv/slapd-$DSHOST/pwdfile.txt` > /etc/dirsrv/slapd-$DSHOST/pin.txt; \
+  chown ldap.ldap /etc/dirsrv/slapd-$DSHOST/pin.txt; \
+  chmod 400 /etc/dirsrv/slapd-$DSHOST/pin.txt
+
+echo "importing apidb-ca-rsa.crt"
+certutil -d /etc/dirsrv/slapd-$DSHOST -A -n "CA Certificate" -t "CT,," -a -i /etc/pki/tls/certs/apidb-ca-rsa.crt
+
+echo "restarting dirsrv"
+systemctl restart dirsrv.target
+while ! nmap -p 389 localhost | grep -q '389/tcp open  ldap'; do
+  echo "waiting for port 389"
+  sleep 1;
+done
+
+echo "install SSL cert (see Passpack 'apidb-*-rsa.p12' entry for PKCS12 file password)"
+pk12util -i ~root/fedora-ds/$DSHOST.apidb.org-rsa.p12 -d /etc/dirsrv/slapd-$DSHOST -k /etc/dirsrv/slapd-$DSHOST/pwdfile.txt
+
+echo "installing custom schema"
+cp ~root/fedora-ds/Directory/schema/71oracle.ldif /etc/dirsrv/slapd-$DSHOST/schema/
+cp ~root/fedora-ds/Directory/schema/75apidb.ldif /etc/dirsrv/slapd-$DSHOST/schema/
+
+echo "enabling ssl. Enter password for 'directory manager'. See"
+echo "~root/fedora-ds/install-$DSHOST.inf for password"
+ldapmodify -x -h $DSHOST.vm.apidb.org -p 389 -D "cn=directory manager" -w $DIR_MAN_PW -f ~root/fedora-ds/Directory/ldif/ssl_enable.ldif
+
+echo "restarting dirsrv"
+systemctl restart dirsrv.target
+while ! nmap -p 389 localhost | grep -q '389/tcp open  ldap'; do
+  echo "waiting for port 389"
+  sleep 1;
+done
+
+echo "importing data from backup"
+ldapmodify -x -h $DSHOST.vm.apidb.org -p 389 -D "cn=directory manager" -w $DIR_MAN_PW -f ~root/fedora-ds/sampledata.ldif -a
+
+echo "Assign members of 'ApiDB Directory Administrators' group as Password Administrators"
+ldapmodify -x -H ldap://$DSHOST.vm.apidb.org -D "cn=directory manager" -w $DIR_MAN_PW << EOF
+dn: cn=config
+changetype: modify
+replace: passwordAdminDN
+passwordAdminDN: cn=ApiDB Directory Administrators,ou=Groups,dc=apidb,dc=org
+EOF
+
+cat <<EOF
+Some searches to run for testing...
+
+ldapsearch -LLL -x -H ldaps://$DSHOST.vm.apidb.org -b "cn=OracleContext,ou=applications,dc=apidb,dc=org" "(cn=*plas*)"
+
+ldapsearch -LLL -x -H ldaps://$DSHOST.vm.apidb.org -D "uid=mheiges,ou=People,dc=apidb,dc=org" -w $DIR_MAN_PW -b 'dc=apidb,dc=org'  "(&(objectclass=groupOfUniqueNames)(uniqueMember=uid=mheiges,ou=People,dc=apidb,dc=org)(cn=ApiDBSysAdmins))"
+
+EOF

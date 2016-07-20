@@ -1,0 +1,50 @@
+[General]
+AdminDomain = apidb.org
+ConfigDirectoryAdminID = admin
+ConfigDirectoryAdminPwd = tgr7avtw
+ConfigDirectoryLdapURL = ldap://<DSHOST>.vm.apidb.org:389/o=NetscapeRoot
+FullMachineName = <DSHOST>.vm.apidb.org
+ServerRoot = /usr/lib64/dirsrv
+SuiteSpotGroup = ldap
+SuiteSpotUserID = ldap
+prefix = 
+
+[admin]
+Port = 32093
+ServerAdminID = admin
+ServerAdminPwd = tgr7avtw
+ServerIpAddress = 0.0.0.0
+SysUser = ldap
+
+
+
+[slapd]
+AddOrgEntries = No
+AddSampleEntries = No
+InstallLdifFile = none
+RootDN = cn=Directory Manager
+RootDNPwd = <DIR_MAN_PW>
+ServerIdentifier = <DSHOST>
+ServerPort = 389
+SlapdConfigForMC = yes
+Suffix = dc=apidb,dc=org
+UseExistingMC = 0
+bak_dir = /var/lib/dirsrv/slapd-<DSHOST>/bak
+bindir = /usr/bin
+cert_dir = /etc/dirsrv/slapd-<DSHOST>
+config_dir = /etc/dirsrv/slapd-<DSHOST>
+datadir = /usr/share
+db_dir = /var/lib/dirsrv/slapd-<DSHOST>/db
+ds_bename = userRoot
+inst_dir = /usr/lib64/dirsrv/slapd-<DSHOST>
+ldif_dir = /var/lib/dirsrv/slapd-<DSHOST>/ldif
+localstatedir = /var
+lock_dir = /var/lock/dirsrv/slapd-<DSHOST>
+log_dir = /var/log/dirsrv/slapd-<DSHOST>
+naming_value = apidb
+run_dir = /var/run/dirsrv
+sbindir = /usr/sbin
+schema_dir = /etc/dirsrv/slapd-<DSHOST>/schema
+sysconfdir = /etc
+tmp_dir = /tmp
+

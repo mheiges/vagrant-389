@@ -1,0 +1,37 @@
+ ldapdelete -x -H ldaps://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo "uid=cdi,ou=people,dc=apidb,dc=org"
+
+ ldapmodify -x -H ldap://dsa.vm.apidb.org -D "uid=mheiges,ou=People,dc=apidb,dc=org" -w $PW -f cdi.ldif -a
+ ldapmodify -x -H ldap://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo -f cdi.ldif -a
+
+ ldappasswd -x -H ldaps://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo -s "{CLEAR}QzhdW230216" "uid=cdi,ou=people,dc=apidb,dc=org"
+ ldappasswd -x -H ldaps://dsa.vm.apidb.org -D "uid=mheiges,ou=People,dc=apidb,dc=org" -w $PW -s "{CLEAR}QzhdW230216" "uid=cdi,ou=people,dc=apidb,dc=org"
+
+ ldapsearch -LLL -x -H ldaps://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo -b "uid=cdi,ou=People,dc=apidb,dc=org" userPassword
+ ldapsearch -LLL -x -H ldaps://dsa.vm.apidb.org -D "uid=mheiges,ou=People,dc=apidb,dc=org" -w $PW -b "uid=cdi,ou=People,dc=apidb,dc=org" userPassword
+
+ ldapsearch -ZZ -LLL -x -H ldap://dsa.vm.apidb.org -D "cn=Directory Manager" -w gas1gacdo -b "cn=config" -s base nsslapd-syntaxcheck
+
+ldapmodify -x -H ldap://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo << EOF
+dn: cn=config
+changetype: modify
+replace: passwordAdminDN
+passwordAdminDN: uid=mheiges,ou=People,dc=apidb,dc=org
+EOF
+
+
+ldapsearch -LLL -x -H ldaps://dsa.vm.apidb.org       -D "cn=directory manager"       -w gas1gacdo       -b "cn=config"  '(passwordAdminDN=*)' passwordAdminDN
+
+
+ldapmodify -x -H ldap://dsa.vm.apidb.org -D "uid=mheiges,ou=People,dc=apidb,dc=org" -w $PW << EOF
+dn: uid=cdi,ou=people,dc=apidb,dc=org
+changetype: modify
+replace: userPassword
+userPassword: {CLEAR}foofoo
+EOF
+
+ldapmodify -x -H ldap://dsa.vm.apidb.org -D "cn=directory manager" -w gas1gacdo << EOF
+dn: cn=config
+changetype: modify
+replace: passwordAdminDN
+passwordAdminDN: cn=ApiDB Directory Administrators,ou=Groups,dc=apidb,dc=org
+EOF

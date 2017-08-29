@@ -2,12 +2,14 @@ vagrant_root = File.dirname(__FILE__)
 
 SERVERS = {
   :dsa => {
-    :vagrant_box => "ebrc/centos-7-64-puppet",
-    :hostname    => 'dsa.vm.apidb.org',
+    :vagrant_box     => "ebrc/centos-7-64-puppet",
+    :vagrant_box_url => 'http://software.apidb.org/vagrant/centos-7-64-puppet.json',
+    :hostname        => 'dsa.vm.apidb.org',
   },
   :dsb => {
-   :vagrant_box  => "ebrc/centos-7-64-puppet",
-    :hostname    => 'dsb.vm.apidb.org',
+   :vagrant_box      => "ebrc/centos-7-64-puppet",
+    :vagrant_box_url => 'http://software.apidb.org/vagrant/centos-7-64-puppet.json',
+    :hostname        => 'dsb.vm.apidb.org',
   },
 }
 

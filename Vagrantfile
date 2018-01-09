@@ -22,6 +22,7 @@ Vagrant.configure(2) do |config|
     config.vm.define name do |vm_config|
 
       vm_config.vm.box      = cfg[:vagrant_box] if cfg[:vagrant_box]
+      vm_config.vm.box_url  = cfg[:vagrant_box_url] if cfg[:vagrant_box_url]
       vm_config.vm.hostname = cfg[:hostname] if cfg[:hostname]
 
       vm_config.vm.network :private_network, type: 'dhcp'
